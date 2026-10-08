@@ -1,0 +1,413 @@
+.form-page {
+  width: min(100%, 950px);
+}
+
+.finder-data-page {
+  width: min(100%, 1080px);
+}
+
+.record-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(130px, 0.8fr));
+  gap: 11px;
+  margin: 23px 0 17px;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 13px;
+}
+
+.record-search {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: #40546d;
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.record-search-input {
+  display: flex;
+  min-height: 41px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: #8190a1;
+  border: 1px solid #dfe5ec;
+  border-radius: 9px;
+}
+
+.record-search-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  font-size: 11px;
+}
+
+.registered-person-list,
+.candidate-list,
+.verification-list {
+  display: grid;
+  gap: 12px;
+}
+
+.registered-person-card {
+  display: flex;
+  min-width: 0;
+  gap: 15px;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #e5eaf0;
+  border-radius: 13px;
+}
+
+.record-photo {
+  width: 86px;
+  height: 100px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  background: #f0f3f6;
+  border-radius: 10px;
+}
+
+.registered-person-body {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+
+.registered-person-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.registered-person-link:focus-visible {
+  outline-offset: 4px;
+}
+
+.record-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.registered-person-body h2,
+.registered-person-body h3 {
+  margin: 8px 0 6px;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.registered-person-body h3 {
+  font-size: 15px;
+}
+
+.record-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 5px 0 0;
+  color: #77869a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.record-meta svg {
+  flex: 0 0 auto;
+}
+
+.record-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 18px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid #edf0f4;
+}
+
+.record-details-grid span {
+  color: #62738a;
+  font-size: 10px;
+}
+
+.record-details-grid strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #909cab;
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.record-photo-note {
+  margin: 10px 0 0;
+  color: #748397;
+  font-size: 9px;
+}
+
+.candidate-review-card,
+.verification-card {
+  padding: 19px;
+  background: #fff;
+  border: 1px solid #e5eaf0;
+  border-radius: 14px;
+}
+
+.candidate-review-top,
+.verification-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.candidate-review-top h2,
+.verification-card-heading h2 {
+  margin: 5px 0 0;
+  color: var(--navy);
+  font-size: 16px;
+}
+
+.candidate-review-person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 13px;
+  padding: 12px;
+  background: #f7f9fb;
+  border-radius: 9px;
+}
+
+.candidate-review-person p {
+  margin: 0;
+  color: #63748a;
+  font-size: 10px;
+}
+
+.candidate-review-person strong {
+  color: #3f526a;
+}
+
+.candidate-review-card .evidence-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.candidate-action-link {
+  margin-top: 13px;
+}
+
+.matching-pipeline-note {
+  margin: 18px 0;
+  padding: 12px 14px;
+  color: #536983;
+  background: #edf2f7;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.verification-card-heading .match-score {
+  min-width: 104px;
+}
+
+.verification-people {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 17px;
+}
+
+.verification-person {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #edf0f4;
+  border-radius: 11px;
+}
+
+.verification-photo,
+.verification-photo-placeholder {
+  display: inline-grid;
+  width: 66px;
+  height: 76px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #7c8ca0;
+  object-fit: cover;
+  background: #e9eef3;
+  border-radius: 9px;
+}
+
+.verification-person h3 {
+  margin: 5px 0;
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.verification-person-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 4px 0 0;
+  color: #78879a;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.verification-current-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: #78879a;
+  font-size: 10px;
+}
+
+.verification-evidence-title {
+  margin: 16px 0 -5px;
+  color: var(--navy);
+  font-size: 11px;
+}
+
+.verification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 17px;
+}
+
+.reject-candidate-button {
+  color: #9c4848;
+  border-color: #ead4d4;
+}
+
+.verification-action-notice {
+  margin: 17px 0;
+  padding: 11px 13px;
+  color: #276447;
+  background: #eaf6ef;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.updates-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 17px;
+  margin: 20px 0;
+}
+
+.updates-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #728197;
+  font-size: 9px;
+}
+
+.updates-key svg {
+  color: #617995;
+}
+
+.updates-timeline {
+  max-width: 760px;
+  padding: 5px 19px;
+  background: white;
+  border: 1px solid #e5eaf0;
+  border-radius: 13px;
+}
+
+.finder-profile-card {
+  margin-top: 23px;
+}
+
+.finder-profile-card .organization-info h2 {
+  font-size: 18px;
+}
+
+.finder-safety-note > span {
+  color: #6e7683;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.family-empty-state {
+  padding: 17px;
+  background: #fff;
+  border: 1px dashed #dbe2e9;
+  border-radius: 12px;
+}
+
+.family-empty-state p {
+  margin: 0 0 8px;
+  color: #77869a;
+  font-size: 11px;
+}
+
+.family-empty-state .text-link {
+  padding: 0;
+}
+
+@media (max-width: 760px) {
+  .record-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .record-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .record-filters,
+  .verification-people,
+  .candidate-review-card .evidence-list {
+    grid-template-columns: 1fr;
+  }
+
+  .registered-person-card {
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .record-photo {
+    width: 63px;
+    height: 75px;
+  }
+
+  .record-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-review-top,
+  .verification-card-heading {
+    align-items: flex-start;
+  }
+
+  .verification-card,
+  .candidate-review-card {
+    padding: 14px;
+  }
+
+  .verification-actions {
+    flex-direction: column;
+  }
+
+  .verification-actions .button {
+    width: 100%;
+  }
+
+  .updates-timeline {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}

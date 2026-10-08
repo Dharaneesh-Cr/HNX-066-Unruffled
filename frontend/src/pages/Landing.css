@@ -1,0 +1,99 @@
+.portal-entry {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-size: 180% 180%;
+  animation: sahayaa-entry-gradient 14s ease-in-out infinite alternate;
+}
+
+.portal-entry::before,
+.portal-entry::after {
+  position: absolute;
+  z-index: -1;
+  display: block;
+  border: 1px solid rgba(67, 95, 127, 0.08);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.portal-entry::before {
+  top: 12%;
+  left: -90px;
+  width: 220px;
+  height: 220px;
+  box-shadow: 0 0 0 25px rgba(67, 95, 127, 0.025), 0 0 0 54px rgba(67, 95, 127, 0.018);
+  animation: sahayaa-entry-float 13s ease-in-out infinite alternate;
+}
+
+.portal-entry::after {
+  right: -110px;
+  bottom: 4%;
+  width: 280px;
+  height: 280px;
+  box-shadow: 0 0 0 34px rgba(231, 111, 81, 0.022), 0 0 0 74px rgba(67, 95, 127, 0.02);
+  animation: sahayaa-entry-float 15s ease-in-out infinite alternate-reverse;
+}
+
+.entry-header,
+.entry-content {
+  position: relative;
+}
+
+.entry-brand-mark svg {
+  animation: sahayaa-logo-pulse 9s ease-in-out infinite;
+}
+
+.portal-options {
+  position: relative;
+  z-index: 0;
+}
+
+.entry-handshake {
+  position: relative;
+  z-index: 0;
+}
+
+.portal-option {
+  position: relative;
+  z-index: 1;
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.portal-option:hover {
+  z-index: 2;
+  transform: translateY(-4px);
+  border-color: #d5dee8;
+  box-shadow: 0 20px 46px rgba(26, 45, 69, 0.085);
+}
+
+.entry-footnote svg {
+  flex: 0 0 auto;
+}
+
+@keyframes sahayaa-entry-gradient {
+  from { background-position: 0% 45%; }
+  to { background-position: 100% 55%; }
+}
+
+@keyframes sahayaa-entry-float {
+  from { translate: 0 0; }
+  to { translate: 13px -11px; }
+}
+
+@keyframes sahayaa-logo-pulse {
+  0%, 90%, 100% { scale: 1; }
+  94% { scale: 1.08; }
+  97% { scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-entry,
+  .portal-entry::before,
+  .portal-entry::after,
+  .portal-entry .entry-brand-mark svg,
+  .portal-entry .portal-option,
+  .portal-entry .portal-option:hover {
+    transform: none;
+  }
+}
