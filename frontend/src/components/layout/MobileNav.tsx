@@ -26,7 +26,7 @@ const legacyItems = [
 const searcherItems = [
   { to: '/searcher', label: 'Home', icon: LayoutDashboard, end: true },
   { to: '/family/report', label: 'Report', icon: FilePlus2 },
-  { to: '/searcher#my-cases', label: 'My Cases', icon: ClipboardList },
+  { to: '/searcher/cases', label: 'My Cases', icon: ClipboardList, end: true },
   { to: '/notifications', label: 'Alerts', icon: Bell },
   { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
 ]

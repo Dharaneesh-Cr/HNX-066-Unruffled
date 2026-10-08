@@ -1,11 +1,29 @@
+import { useEffect, useState } from 'react'
 import { Building2, Heart, HeartHandshake, Hospital, Search, ShieldCheck, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import HandshakeAnimation from '../components/common/HandshakeAnimation'
 import './Landing.css'
 
 export default function Landing() {
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updateMotionPreference = (event: MediaQueryListEvent) => setReducedMotion(event.matches)
+    motionPreference.addEventListener('change', updateMotionPreference)
+    return () => motionPreference.removeEventListener('change', updateMotionPreference)
+  }, [])
+
   return (
     <main className="portal-entry">
+      <div className="entry-media" aria-hidden="true">
+        {!reducedMotion && (
+          <video autoPlay muted loop playsInline poster="/handshake-poster.svg" tabIndex={-1}>
+            <source src="/handshake.mp4" type="video/mp4" />
+          </video>
+        )}
+      </div>
       <header className="entry-header">
         <Link aria-label="Sahayaa home" className="entry-brand" to="/">
           <span className="entry-brand-mark" aria-hidden="true">
@@ -23,10 +41,6 @@ export default function Landing() {
           <p className="entry-description">
             Sahayaa brings families and authorized responders together to help reunite people after disasters.
           </p>
-        </div>
-
-        <div className="entry-handshake">
-          <HandshakeAnimation />
         </div>
 
         <div className="portal-options">
