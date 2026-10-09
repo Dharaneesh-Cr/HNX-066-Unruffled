@@ -1,48 +1,62 @@
-import { demoCase } from '../../data/demoData'
-import CaseStatus from '../../components/cases/CaseStatus'
-import CaseTimeline from '../../components/cases/CaseTimeline'
-import PagePlaceholder from '../../components/common/PagePlaceholder'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useLocalStorage } from '../../hooks/useLocalStorage'
-import { demoMissingCases } from '../../data/demoRecords'
-import { MISSING_CASES_KEY } from '../../data/storageKeys'
-import { useAuth } from '../../hooks/useAuth'
+import CaseTimeline from '../../components/cases/CaseTimeline'
+import CaseStatus from '../../components/cases/CaseStatus'
 import EmptyState from '../../components/common/EmptyState'
+import LoadingState from '../../components/common/LoadingState'
 import PageContainer from '../../components/layout/PageContainer'
+import { useAuth } from '../../hooks/useAuth'
+import { getMissingCase } from '../../services/api'
+import type { MissingPersonCase } from '../../types'
 
 export default function CaseTimelinePage() {
   const { caseId } = useParams()
   const { session } = useAuth()
-  const [cases] = useLocalStorage(MISSING_CASES_KEY, demoMissingCases)
-  const caseRecord = cases.find((record) =>
-    record.id === caseId &&
-    record.reporterEmail.toLocaleLowerCase() === session?.user.email.toLocaleLowerCase(),
-  )
-  if (!caseRecord) {
-    return (
-      <PageContainer role="searcher">
-        <EmptyState title="Case not available" description="This case is not associated with your family account." />
-      </PageContainer>
-    )
-  }
-  const caseTitle = caseRecord?.profile.fullName ?? demoCase.missingPerson.fullName
-  const status = caseRecord?.status ?? demoCase.status
-  const updates = caseRecord?.updates ?? demoCase.updates
+  const [caseRecord, setCaseRecord] = useState<MissingPersonCase | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!session || !caseId) return
+    void getMissingCase(session.accessToken, caseId)
+      .then((record) => {
+        if (!cancelled) setCaseRecord(record)
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load this case.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [caseId, session])
 
   return (
-    <PagePlaceholder
-      title="Case timeline"
-      description="A chronological view of updates shared with the response network."
-      actionLabel="Back to family space"
-      actionTo="/family"
-    >
-      <div className="embedded-demo">
-        <div className="case-detail-heading">
-          <div><span className="eyebrow">{caseId ?? demoCase.id}</span><h2>{caseTitle}</h2></div>
-          <CaseStatus status={status} />
-        </div>
-        <CaseTimeline updates={updates} />
-      </div>
-    </PagePlaceholder>
+    <PageContainer role="searcher">
+      <section className="portal-dashboard" aria-labelledby="case-timeline-title">
+        <p className="portal-dashboard-eyebrow">Searcher Portal · Case timeline</p>
+        {loading ? (
+          <LoadingState label="Loading saved case updates" />
+        ) : error ? (
+          <p className="person-form-error" role="alert">{error}</p>
+        ) : !caseRecord ? (
+          <EmptyState title="Case not available" description="This case is not associated with your account." />
+        ) : (
+          <>
+            <div className="case-detail-heading">
+              <div>
+                <span className="eyebrow">{caseRecord.id}</span>
+                <h1 id="case-timeline-title">{caseRecord.profile.fullName ?? caseRecord.profile.alias ?? 'Missing-person case'}</h1>
+              </div>
+              <CaseStatus status={caseRecord.status} />
+            </div>
+            <CaseTimeline updates={caseRecord.updates} />
+          </>
+        )}
+      </section>
+    </PageContainer>
   )
 }

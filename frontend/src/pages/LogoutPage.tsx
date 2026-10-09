@@ -20,7 +20,7 @@ export default function LogoutPage() {
       try {
         logout()
       } catch (cause) {
-        console.error('Unable to clear the Sahayaa demo session.', cause)
+        console.error('Unable to clear the Sahayaa session.', cause)
         setError('Logout could not clear this browser session. Please try again.')
       }
     })

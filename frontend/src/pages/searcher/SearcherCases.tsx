@@ -3,13 +3,12 @@ import { Link } from 'react-router-dom'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import PageContainer from '../../components/layout/PageContainer'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { useLocalStorage } from '../../hooks/useLocalStorage'
-import { demoAffectedRecords, demoMissingCases } from '../../data/demoRecords'
-import { MATCHES_KEY, MISSING_CASES_KEY } from '../../data/storageKeys'
-import { createDemoCandidateMatches } from '../../services/matchingService'
+import LoadingState from '../../components/common/LoadingState'
+import { listMyMissingCases } from '../../services/api'
 import { formatDate, formatDateTime } from '../../utils/formatters'
-import type { CandidateMatch, MissingPersonCase } from '../../types'
+import type { MissingPersonCase } from '../../types'
 import './SearcherCases.css'
 
 function getLatestUpdate(caseRecord: MissingPersonCase) {
@@ -20,14 +19,29 @@ function getLatestUpdate(caseRecord: MissingPersonCase) {
 
 export default function SearcherCases() {
   const { session } = useAuth()
-  const [allCases] = useLocalStorage<MissingPersonCase[]>(MISSING_CASES_KEY, demoMissingCases)
-  const [matches] = useLocalStorage<CandidateMatch[]>(
-    MATCHES_KEY,
-    createDemoCandidateMatches(demoMissingCases, demoAffectedRecords),
-  )
-  const cases = allCases.filter((caseRecord) =>
-    caseRecord.reporterEmail.toLocaleLowerCase() === session?.user.email.toLocaleLowerCase(),
-  )
+  const [cases, setCases] = useState<MissingPersonCase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!session) {
+      return
+    }
+    void listMyMissingCases(session.accessToken)
+      .then((records) => {
+        if (!cancelled) setCases(records)
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load cases.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [session])
 
   return (
     <PageContainer role="searcher">
@@ -38,7 +52,11 @@ export default function SearcherCases() {
           Track your submitted reports, candidate matches and reunification progress.
         </p>
 
-        {cases.length === 0 ? (
+        {loading ? (
+          <LoadingState label="Loading your saved cases" />
+        ) : error ? (
+          <p className="person-form-error" role="alert">{error}</p>
+        ) : cases.length === 0 ? (
           <div className="searcher-cases-empty">
             <EmptyState
               description="Your submitted reports and updates will appear here."
@@ -52,13 +70,6 @@ export default function SearcherCases() {
           <div className="searcher-case-list">
             {cases.map((caseRecord) => {
               const latestUpdate = getLatestUpdate(caseRecord)
-              const candidateSimilarity = matches
-                .filter((match) => match.caseId === caseRecord.id)
-                .reduce<number | undefined>((highest, match) =>
-                  highest === undefined || match.similarityPercent > highest
-                    ? match.similarityPercent
-                    : highest, undefined)
-
               return (
                 <article className="searcher-case-card" key={caseRecord.id}>
                   {caseRecord.profile.photo ? (
@@ -88,11 +99,6 @@ export default function SearcherCases() {
                     </div>
 
                     <div className="searcher-case-updates">
-                      {candidateSimilarity !== undefined && (
-                        <p className="searcher-case-similarity">
-                          <strong>{candidateSimilarity}%</strong> Candidate Similarity
-                        </p>
-                      )}
                       <p>
                         <strong>Last update:</strong>{' '}
                         {latestUpdate

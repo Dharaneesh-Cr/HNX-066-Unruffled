@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Activity,
   Bell,
@@ -14,6 +15,15 @@ import {
 import { Link } from 'react-router-dom'
 import PageContainer from '../../components/layout/PageContainer'
 import StatCard from '../../components/common/StatCard'
+import { useAuth } from '../../hooks/useAuth'
+import { listCandidateMatches, listMissingCasesForFinder, listOrganizationAffectedPeople } from '../../services/api'
+
+interface FinderStats {
+  affected: number
+  matches: number
+  review: number
+  updatesToday: number
+}
 
 const actions = [
   { to: '/finder/register', label: 'Register Affected Person', icon: UserPlus, id: 'register-person' },
@@ -26,6 +36,38 @@ const actions = [
 ]
 
 export default function FinderDashboard() {
+  const { session } = useAuth()
+  const approvalStatus = session?.user.approvalStatus
+  const [stats, setStats] = useState<FinderStats>({ affected: 0, matches: 0, review: 0, updatesToday: 0 })
+  const [statsError, setStatsError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!session || approvalStatus !== 'APPROVED') return
+    void Promise.all([
+      listOrganizationAffectedPeople(session.accessToken),
+      listMissingCasesForFinder(session.accessToken),
+      listCandidateMatches(session.accessToken),
+    ])
+      .then(([affected, cases, matches]) => {
+        if (cancelled) return
+        const today = new Date().toISOString().slice(0, 10)
+        const updates = cases.flatMap((caseRecord) => caseRecord.updates)
+        setStats({
+          affected: affected.length,
+          matches: matches.length,
+          review: matches.filter(({ match }) => match.verificationStatus === 'PENDING' || match.verificationStatus === 'IN_PROGRESS').length,
+          updatesToday: updates.filter((update) => update.timestamp.startsWith(today)).length,
+        })
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setStatsError(cause instanceof Error ? cause.message : 'Unable to load organization activity.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [approvalStatus, session])
+
   return (
     <PageContainer role="finder">
       <section className="portal-dashboard" aria-labelledby="finder-dashboard-title">
@@ -35,25 +77,47 @@ export default function FinderDashboard() {
           Coordinate authorized records and case verification for your organization.
         </p>
 
+        {approvalStatus === 'PENDING' && (
+          <div className="finder-safety-note" role="status">
+            <ShieldCheck size={17} aria-hidden="true" />
+            <p>Your account is registered and you are signed in. Organization approval is pending; Finder records and protected operations will be available after approval.</p>
+          </div>
+        )}
+        {approvalStatus === 'REJECTED' && (
+          <div className="finder-safety-note" role="alert">
+            <ShieldCheck size={17} aria-hidden="true" />
+            <p>Your organization application was not approved. Protected Finder records and operations remain unavailable.</p>
+          </div>
+        )}
+        {approvalStatus === 'APPROVED' && (
+          <div className="finder-safety-note" role="status">
+            <ShieldCheck size={17} aria-hidden="true" />
+            <p>Organization approval: Approved. Authorized Finder operations are enabled.</p>
+          </div>
+        )}
+
+        {approvalStatus !== 'PENDING' && approvalStatus !== 'REJECTED' && (
+          <>
         <section className="organization-summary" id="organization-profile" aria-label="Organization profile">
           <span className="organization-icon" aria-hidden="true"><Building2 size={22} /></span>
           <div className="organization-info">
             <p className="eyebrow">Organization</p>
-            <h2>Government Hospital - Zone A</h2>
+            <h2>{session?.user.organizationName ?? 'Organization profile'}</h2>
             <div className="organization-meta">
-              <span><strong>Organization Type</strong>Hospital</span>
-              <span><strong>Role</strong>Medical Responder</span>
-              <span><strong>Last synchronization</strong>2 minutes ago</span>
+              <span><strong>Organization Type</strong>{session?.user.organizationType ?? 'Not available'}</span>
+              <span><strong>Approval</strong>{approvalStatus ?? 'Not available'}</span>
+              <span><strong>Account</strong>{session?.user.name}</span>
             </div>
           </div>
-          <span className="online-status"><i aria-hidden="true" /> Online</span>
+          <span className="online-status"><i aria-hidden="true" /> Connected</span>
         </section>
 
+        {statsError && <p className="person-form-error" role="alert">{statsError}</p>}
         <div className="stat-grid dashboard-stats finder-stats">
-          <StatCard label="Affected People Registered" value="24" icon={<UsersRound size={18} />} />
-          <StatCard label="Potential Matches" value="3" icon={<Activity size={18} />} />
-          <StatCard label="Awaiting Verification" value="2" icon={<ShieldCheck size={18} />} />
-          <StatCard label="Cases Updated Today" value="7" icon={<Bell size={18} />} />
+          <StatCard label="Affected People Registered" value={String(stats.affected)} icon={<UsersRound size={18} />} />
+          <StatCard label="Potential Matches" value={String(stats.matches)} icon={<Activity size={18} />} />
+          <StatCard label="Awaiting Verification" value={String(stats.review)} icon={<ShieldCheck size={18} />} />
+          <StatCard label="Case Updates Today" value={String(stats.updatesToday)} icon={<Bell size={18} />} />
         </div>
 
         <div className="dashboard-section-heading finder-action-heading">
@@ -84,6 +148,8 @@ export default function FinderDashboard() {
             supports review; it does not confirm identity. Human verification is required.
           </p>
         </div>
+          </>
+        )}
       </section>
     </PageContainer>
   )

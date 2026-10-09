@@ -1,30 +1,21 @@
 import { useRef, useState, type FormEvent, type RefObject } from 'react'
 import { ImagePlus, ShieldCheck, Trash2, Upload } from 'lucide-react'
-import type { AffectedPersonRecord, MissingPersonCase, PersonProfile } from '../../types'
+import type {
+  AffectedPersonCreateInput,
+  MissingCaseCreateInput,
+  RegistrationInput,
+  RegistrationProfileInput,
+} from '../../types'
 import './PersonRegistrationForm.css'
 
 type FormKind = 'missing' | 'affected'
-type SavedPerson = MissingPersonCase | AffectedPersonRecord
-
 interface PersonRegistrationFormProps {
   kind: FormKind
-  onSubmit: (record: SavedPerson) => void
+  onSubmit: (record: RegistrationInput) => Promise<void>
 }
 
 const photoTypes = 'image/jpeg,image/png,image/webp'
 const maxPhotoBytes = 1_500_000
-const organizationTypeValues: Record<string, AffectedPersonRecord['organizationType']> = {
-  Hospital: 'HOSPITAL',
-  Shelter: 'SHELTER',
-  'Rescue Center': 'RESCUE_CENTER',
-  'Relief Camp': 'RELIEF_CAMP',
-  NGO: 'NGO',
-  'Emergency Response': 'EMERGENCY_RESPONSE',
-}
-
-function makeId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
 
 function readPhoto(file?: File) {
   if (!file || (file.size === 0 && !file.name)) return Promise.resolve(undefined)
@@ -35,7 +26,7 @@ function readPhoto(file?: File) {
     return Promise.reject(new Error('Choose a JPEG, PNG, or WebP image.'))
   }
   if (file.size > maxPhotoBytes) {
-    return Promise.reject(new Error('For this browser demo, each image must be 1.5 MB or smaller.'))
+    return Promise.reject(new Error('Each image must be 1.5 MB or smaller.'))
   }
 
   return new Promise<string>((resolve, reject) => {
@@ -209,31 +200,22 @@ export default function PersonRegistrationForm({
 
     try {
       const form = new FormData(formElement)
-      const photo = await readPhoto((form.get('photo') as File | null) ?? undefined)
-      const id = makeId(isMissing ? 'SH' : 'FP')
-      const profileId = makeId('PERSON')
-      const profile: PersonProfile = {
-        id: profileId,
+      const photoFile = form.get('photo')
+      if (photoFile instanceof File && photoFile.size > 0) {
+        await readPhoto(photoFile)
+      }
+      const profile: RegistrationProfileInput = {
         fullName: value(form, 'fullName'),
         alias: value(form, 'alias'),
         age: numberValue(form, 'age'),
         gender: value(form, 'gender'),
-        photo,
         distinguishingMarks: value(form, 'distinguishingMarks'),
         clothingDescription: value(form, 'clothingDescription'),
         additionalDescription: value(form, 'additionalDescription'),
-        lastSeenDate: value(form, 'lastSeenDate'),
-        lastSeenTime: value(form, 'lastSeenTime'),
-        lastSeenLocation: value(form, 'lastSeenLocation'),
-        foundDate: value(form, 'foundDate'),
-        foundTime: value(form, 'foundTime'),
-        foundLocation: value(form, 'foundLocation'),
       }
-      const createdAt = new Date().toISOString()
 
       if (isMissing) {
-        const record: MissingPersonCase = {
-          id,
+        const record: MissingCaseCreateInput = {
           profile,
           reporterName: value(form, 'reporterName') ?? '',
           relationship: value(form, 'relationship') ?? '',
@@ -241,45 +223,43 @@ export default function PersonRegistrationForm({
           reporterPhone: value(form, 'reporterPhone') ?? '',
           preferredContactMethod: 'Phone',
           consented: form.get('consent') === 'on',
-          status: 'SEARCHING',
-          createdAt,
-          updates: [{
-            id: makeId('UPDATE'),
-            title: 'Missing person report received',
-            description: 'The report is available to the authorized response network.',
-            timestamp: createdAt,
-            actor: value(form, 'reporterName') ?? 'Family reporter',
-          }],
+          lastSeenDate: value(form, 'lastSeenDate') ?? '',
+          lastSeenTime: value(form, 'lastSeenTime'),
+          lastSeenLocation: value(form, 'lastSeenLocation') ?? '',
+          photoFile: photoFile instanceof File && photoFile.size > 0 ? photoFile : undefined,
         }
-        onSubmit(record)
+        await onSubmit(record)
       } else {
-        const record: AffectedPersonRecord = {
-          id,
+        const record: AffectedPersonCreateInput = {
           profile,
-          organizationId: 'ORG-01',
-          organizationName: value(form, 'organizationName') ?? 'Sahayaa demo organization',
-          organizationType: organizationTypeValues[value(form, 'organizationType') ?? 'Hospital'],
-          shelterOrFacility: value(form, 'facilityName'),
-          currentLocation: value(form, 'currentLocation') ?? value(form, 'foundLocation') ?? '',
-          conditionStatus: value(form, 'conditionStatus') ?? 'Needs assessment',
+          facilityName: value(form, 'facilityName'),
+          foundDate: value(form, 'foundDate') ?? '',
+          foundTime: value(form, 'foundTime'),
+          foundLocation: value(form, 'foundLocation') ?? '',
+          currentLocation: value(form, 'foundLocation') ?? '',
+          conditionStatus: value(form, 'conditionStatus') ?? '',
           foundBy: value(form, 'foundBy') ?? '',
-          candidateStatus: 'SEARCHING',
-          registeredAt: createdAt,
+          medicalConditionSummary: value(form, 'medicalConditionSummary'),
+          medicationInformation: value(form, 'medicationInformation'),
+          immediateCareRequired: value(form, 'immediateCareRequired'),
+          accessibilityNeeds: value(form, 'accessibilityNeeds'),
+          consented: form.get('consent') === 'on',
+          photoFile: photoFile instanceof File && photoFile.size > 0 ? photoFile : undefined,
         }
-        onSubmit(record)
+        await onSubmit(record)
       }
       formElement.reset()
       setPrimaryPhoto(undefined)
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('Choose a ')) {
         setPhotoError(error.message)
-      } else if (error instanceof Error && error.message.startsWith('For this browser')) {
-        setPhotoError(error.message)
       } else if (error instanceof Error && error.message.startsWith('The selected image')) {
         setPhotoError(error.message)
+      } else if (error instanceof Error) {
+        setSubmitError(error.message)
       } else {
         console.error('Unable to process the registration form.', error)
-        setSubmitError('The report could not be prepared in this browser. Please try again.')
+        setSubmitError('The report could not be submitted. Please try again.')
       }
     } finally {
       setSubmitting(false)
@@ -321,7 +301,7 @@ export default function PersonRegistrationForm({
             preview={primaryPhoto}
           />
         </div>
-        <p className="person-field-hint"><ImagePlus size={15} /> Photos stay in this browser demo for preview and human review only; they are not uploaded to a server.</p>
+        <p className="person-field-hint"><ImagePlus size={15} /> Selected photos are uploaded to private storage when you submit the record.</p>
         {photoError && <p className="person-form-error" role="alert">{photoError}</p>}
       </section>
 
@@ -393,6 +373,21 @@ export default function PersonRegistrationForm({
         </div>
       </section>
 
+      {!isMissing && (
+        <section className="person-form-section" aria-labelledby="medical-section-title">
+          <div className="person-section-heading">
+            <span className="person-section-number">05</span>
+            <div><h2 id="medical-section-title">Medical & Accessibility Information</h2><p>Optional sensitive information for authorized care staff only.</p></div>
+          </div>
+          <div className="person-fields-grid">
+            <TextAreaField name="medicalConditionSummary" label="Medical condition summary" optional />
+            <TextAreaField name="medicationInformation" label="Medication information" optional />
+            <TextAreaField name="immediateCareRequired" label="Immediate care required" optional />
+            <TextAreaField name="accessibilityNeeds" label="Accessibility needs" optional />
+          </div>
+        </section>
+      )}
+
       {isMissing ? (
         <section className="person-form-section" aria-labelledby="contact-section-title">
           <div className="person-section-heading">
@@ -409,12 +404,10 @@ export default function PersonRegistrationForm({
       ) : (
         <section className="person-form-section" aria-labelledby="organization-section-title">
           <div className="person-section-heading">
-            <span className="person-section-number">05</span>
-            <div><h2 id="organization-section-title">Organization Information</h2><p>Identify the authorized organization caring for this person.</p></div>
+            <span className="person-section-number">06</span>
+            <div><h2 id="organization-section-title">Facility Information</h2><p>Your authorized organization is taken from your verified account.</p></div>
           </div>
           <div className="person-fields-grid">
-            <TextField name="organizationName" label="Organization" required />
-            <SelectField name="organizationType" label="Organization type" required options={['Hospital', 'Shelter', 'Rescue Center', 'Relief Camp', 'NGO', 'Emergency Response']} />
             <TextField name="facilityName" label="Facility (optional)" />
           </div>
         </section>
@@ -422,13 +415,13 @@ export default function PersonRegistrationForm({
 
       <section className="person-form-section person-privacy-section" aria-labelledby="privacy-section-title">
         <div className="person-section-heading">
-          <span className="person-section-number">06</span>
-          <div><h2 id="privacy-section-title">{isMissing ? 'Privacy & Consent' : 'Privacy / Authorization'}</h2><p>Review how these demo details will be handled.</p></div>
+          <span className="person-section-number">{isMissing ? '06' : '07'}</span>
+          <div><h2 id="privacy-section-title">{isMissing ? 'Privacy & Consent' : 'Privacy / Authorization'}</h2><p>Review how these submitted details will be handled.</p></div>
         </div>
         <p className="person-privacy-copy">
           {isMissing
-            ? 'Your information is used to help identify possible candidate matches and is available to authorized response teams.'
-            : 'This record is stored only in this browser demo and is available to the authorized Finder workspace.'}
+            ? 'Your information is submitted to the Sahayaa service for authorized response teams.'
+            : 'This record is submitted to the Sahayaa service for your authorized organization. Sensitive care details are restricted to authorized roles.'}
         </p>
         <label className="person-consent">
           <input name="consent" required type="checkbox" />
@@ -441,9 +434,9 @@ export default function PersonRegistrationForm({
       {submitError && <p className="person-form-error" role="alert">{submitError}</p>}
       <div className="person-form-actions">
         <button className="button button-primary" disabled={submitting} type="submit">
-          {submitting ? 'Saving demo record…' : isMissing ? 'Submit Missing Person Report' : 'Register Affected Person'}
+          {submitting ? 'Submitting…' : isMissing ? 'Submit Missing Person Report' : 'Register Affected Person'}
         </button>
-        <span><ShieldCheck size={15} /> Frontend demo only. No information is sent to a server.</span>
+        <span><ShieldCheck size={15} /> Submitted to the Sahayaa API.</span>
       </div>
     </form>
   )

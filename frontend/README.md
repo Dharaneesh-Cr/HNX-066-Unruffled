@@ -1,32 +1,21 @@
-# React + TypeScript + Vite
+# Sahayaa Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React, TypeScript, and Vite client for the local Sahayaa FastAPI service.
 
-Currently, two official plugins are available:
+## Run on Windows
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Start the backend first as described in [backend/README.md](../backend/README.md), then from a second PowerShell window:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+Set-Location D:\Dharaneesh\Hackathons\UNX-066\frontend
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Vite serves the app at <http://localhost:5173>. The API defaults to `http://localhost:8000/api`; optionally set `VITE_API_BASE_URL` in `frontend\.env.local` to change it. Do not put secrets in Vite variables.
+
+## Authentication and data
+
+Login and registration use the local FastAPI API. Access tokens are stored in `sessionStorage` for the current tab. The backend stores only one-way password hashes in SQLite. Finder organization applications remain unavailable to Finder APIs until a local operator approves them using `python -m app.admin approve-organization ORGANIZATION_ID` from `backend`.
+
+Photos upload to the backend's private local uploads directory and are referenced by SQLite metadata. The frontend does not store database records or credentials in `localStorage`.

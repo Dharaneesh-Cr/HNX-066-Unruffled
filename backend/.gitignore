@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+sahayaa.db
+sahayaa.db-*
+.jwt_secret
+uploads/

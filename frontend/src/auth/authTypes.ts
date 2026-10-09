@@ -1,17 +1,22 @@
-export type Portal = 'searcher' | 'finder'
+import type { ApiUser } from '../services/api'
 
-export interface DemoSession {
-  isAuthenticated: true
+export type Portal = 'searcher' | 'finder' | 'command_center'
+
+export interface AuthSession {
+  accessToken: string
+  expiresAt: number | null
   portal: Portal
-  user: {
-    name: string
-    email: string
-    role: string
-  }
+  user: ApiUser
 }
 
 export interface AuthContextValue {
-  session: DemoSession | null
-  login: (session: DemoSession) => void
+  session: AuthSession | null
+  isLoading: boolean
+  login: (
+    email: string,
+    password: string,
+    portal: Portal,
+    organization?: { name: string; type: string },
+  ) => Promise<void>
   logout: () => void
 }

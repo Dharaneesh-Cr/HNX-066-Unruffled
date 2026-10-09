@@ -1410,7 +1410,8 @@ a {
   margin-top: 17px;
 }
 
-.login-secondary-actions button {
+.login-secondary-actions button,
+.login-secondary-actions a {
   padding: 0;
   color: #63758d;
   background: none;
@@ -1418,9 +1419,11 @@ a {
   cursor: pointer;
   font-size: 10px;
   font-weight: 650;
+  text-decoration: none;
 }
 
-.login-secondary-actions button:hover {
+.login-secondary-actions button:hover,
+.login-secondary-actions a:hover {
   color: var(--coral-dark);
 }
 

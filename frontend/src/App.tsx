@@ -7,9 +7,11 @@ import FamilyDashboard from './pages/family/FamilyDashboard'
 import ReportMissing from './pages/family/ReportMissing'
 import ReliefDashboard from './pages/relief/ReliefDashboard'
 import SearcherLogin from './pages/searcher/SearcherLogin'
+import SearcherRegister from './pages/searcher/SearcherRegister'
 import SearcherDashboard from './pages/searcher/SearcherDashboard'
 import SearcherCases from './pages/searcher/SearcherCases'
 import FinderLogin from './pages/finder/FinderLogin'
+import FinderOrganizationRegister from './pages/finder/FinderOrganizationRegister'
 import FinderDashboard from './pages/finder/FinderDashboard'
 import FinderProfile from './pages/finder/FinderProfile'
 import FinderRegister from './pages/finder/FinderRegister'
@@ -19,22 +21,34 @@ import FinderVerification from './pages/finder/FinderVerification'
 import FinderCaseUpdates from './pages/finder/FinderCaseUpdates'
 import AIMatch from './pages/matching/AIMatch'
 import CommandCenter from './pages/command/CommandCenter'
+import CommandCenterLogin from './pages/command/CommandCenterLogin'
 import CaseTimelinePage from './pages/cases/CaseTimelinePage'
 import Notifications from './pages/notifications/Notifications'
 import Offline from './pages/Offline'
 import Privacy from './pages/Privacy'
 import LogoutPage from './pages/LogoutPage'
 import PagePlaceholder from './components/common/PagePlaceholder'
+import LoadingState from './components/common/LoadingState'
+
+function portalHome(portal: Portal) {
+  return portal === 'command_center' ? '/command' : `/${portal}`
+}
+
+function portalLogin(portal: Portal) {
+  return portal === 'command_center' ? '/command/login' : `/${portal}/login`
+}
 
 function PortalEntry() {
-  const { session } = useAuth()
-  if (session) return <Navigate replace to={`/${session.portal}`} />
+  const { session, isLoading } = useAuth()
+  if (isLoading) return <LoadingState label="Verifying session" />
+  if (session) return <Navigate replace to={portalHome(session.portal)} />
   return <Landing />
 }
 
 function PortalLogin({ children }: { children: ReactNode }) {
-  const { session } = useAuth()
-  if (session) return <Navigate replace to={`/${session.portal}`} />
+  const { session, isLoading } = useAuth()
+  if (isLoading) return <LoadingState label="Verifying session" />
+  if (session) return <Navigate replace to={portalHome(session.portal)} />
   return <>{children}</>
 }
 
@@ -45,14 +59,16 @@ function PortalGuard({
   portal: Portal
   children: ReactNode
 }) {
-  const { session } = useAuth()
-  if (!session) return <Navigate replace to={`/${portal}/login`} />
-  if (session.portal !== portal) return <Navigate replace to={`/${session.portal}`} />
+  const { session, isLoading } = useAuth()
+  if (isLoading) return <LoadingState label="Verifying session" />
+  if (!session) return <Navigate replace to={portalLogin(portal)} />
+  if (session.portal !== portal) return <Navigate replace to={portalHome(session.portal)} />
   return <>{children}</>
 }
 
 function AuthenticatedGuard({ children }: { children: ReactNode }) {
-  const { session } = useAuth()
+  const { session, isLoading } = useAuth()
+  if (isLoading) return <LoadingState label="Verifying session" />
   if (!session) return <Navigate replace to="/" />
   return <>{children}</>
 }
@@ -66,6 +82,7 @@ function App() {
         path="/searcher/login"
         element={<PortalLogin><SearcherLogin /></PortalLogin>}
       />
+      <Route path="/searcher/register" element={<SearcherRegister />} />
       <Route
         path="/searcher"
         element={<PortalGuard portal="searcher"><SearcherDashboard /></PortalGuard>}
@@ -78,6 +95,11 @@ function App() {
         path="/finder/login"
         element={<PortalLogin><FinderLogin /></PortalLogin>}
       />
+      <Route
+        path="/command/login"
+        element={<PortalLogin><CommandCenterLogin /></PortalLogin>}
+      />
+      <Route path="/finder/register-organization" element={<FinderOrganizationRegister />} />
       <Route
         path="/finder"
         element={<PortalGuard portal="finder"><FinderDashboard /></PortalGuard>}
@@ -128,7 +150,7 @@ function App() {
       />
       <Route
         path="/command"
-        element={<PortalGuard portal="finder"><CommandCenter /></PortalGuard>}
+        element={<PortalGuard portal="command_center"><CommandCenter /></PortalGuard>}
       />
       <Route
         path="/timeline/:caseId"

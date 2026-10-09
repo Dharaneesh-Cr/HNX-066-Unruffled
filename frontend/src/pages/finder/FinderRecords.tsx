@@ -1,24 +1,51 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MapPin, Search, SlidersHorizontal } from 'lucide-react'
 import PageContainer from '../../components/layout/PageContainer'
 import StatusBadge from '../../components/common/StatusBadge'
 import EmptyState from '../../components/common/EmptyState'
-import { useLocalStorage } from '../../hooks/useLocalStorage'
-import { AFFECTED_RECORDS_KEY } from '../../data/storageKeys'
-import { demoAffectedRecords } from '../../data/demoRecords'
-import type { AffectedPersonRecord, CaseStatus } from '../../types'
+import LoadingState from '../../components/common/LoadingState'
+import { useAuth } from '../../hooks/useAuth'
+import { listMissingCasesForFinder, listOrganizationAffectedPeople } from '../../services/api'
+import type { AffectedPersonRecord, CaseStatus, MissingPersonCase } from '../../types'
 import { formatDateTime } from '../../utils/formatters'
 import './FinderData.css'
 
 export default function FinderRecords() {
-  const [records] = useLocalStorage<AffectedPersonRecord[]>(
-    AFFECTED_RECORDS_KEY,
-    demoAffectedRecords,
-  )
+  const { session } = useAuth()
+  const [records, setRecords] = useState<AffectedPersonRecord[]>([])
+  const [missingCases, setMissingCases] = useState<MissingPersonCase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('ALL')
   const [location, setLocation] = useState('')
   const [date, setDate] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!session) {
+      return
+    }
+    void Promise.all([
+      listOrganizationAffectedPeople(session.accessToken),
+      listMissingCasesForFinder(session.accessToken),
+    ])
+      .then(([affected, cases]) => {
+        if (!cancelled) {
+          setRecords(affected)
+          setMissingCases(cases)
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load records.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [session])
 
   const visibleRecords = useMemo(() => records.filter((record) => {
     const search = query.trim().toLocaleLowerCase()
@@ -39,7 +66,7 @@ export default function FinderRecords() {
         <p className="portal-dashboard-eyebrow"><SlidersHorizontal size={16} /> Finder Portal · Organization records</p>
         <h1 id="finder-records-title">Affected People Records</h1>
         <p className="portal-dashboard-intro">
-          Fictional demo records registered by authorized response organizations. Sensitive medical fields are not shown in this list.
+          Shared missing-person reports and your organization’s affected-person records. Sensitive medical fields are not shown in these lists.
         </p>
 
         <div className="record-filters" aria-label="Filter affected person records">
@@ -68,17 +95,59 @@ export default function FinderRecords() {
           </label>
         </div>
 
-        {visibleRecords.length ? (
-          <div className="registered-person-list">
-            {visibleRecords.map((record) => (
-              <AffectedRecordCard key={record.id} record={record} />
-            ))}
-          </div>
+        {loading ? (
+          <LoadingState label="Loading reports and organization records" />
+        ) : error ? (
+          <p className="person-form-error" role="alert">{error}</p>
         ) : (
-          <EmptyState title="No records found" description="Try changing your search or filters." />
+          <>
+            <section aria-labelledby="shared-missing-cases-title">
+              <h2 id="shared-missing-cases-title">Searcher Missing-Person Reports</h2>
+              {missingCases.length ? (
+                <div className="registered-person-list">
+                  {missingCases.map((record) => <MissingCaseCard key={record.id} record={record} />)}
+                </div>
+              ) : (
+                <EmptyState title="No missing-person reports yet" description="Reports submitted by Searchers will appear here." />
+              )}
+            </section>
+            <section aria-labelledby="finder-affected-records-title">
+              <h2 id="finder-affected-records-title">Your Organization’s Affected-Person Records</h2>
+              {visibleRecords.length ? (
+                <div className="registered-person-list">
+                  {visibleRecords.map((record) => <AffectedRecordCard key={record.id} record={record} />)}
+                </div>
+              ) : (
+                <EmptyState title="No affected-person records found" description="Try changing your filters or register an affected person." />
+              )}
+            </section>
+          </>
         )}
       </section>
     </PageContainer>
+  )
+}
+
+function MissingCaseCard({ record }: { record: MissingPersonCase }) {
+  return (
+    <article className="registered-person-card">
+      <div className="registered-person-body">
+        <div className="record-card-heading">
+          <span className="case-id">{record.id}</span>
+          <StatusBadge status={record.status} />
+        </div>
+        <h2>{record.profile.fullName ?? record.profile.alias ?? 'Name not known'}</h2>
+        <p className="record-meta">
+          Approx. {record.profile.age ?? 'unknown'} · {record.profile.gender ?? 'Gender not recorded'}
+        </p>
+        <p className="record-meta"><MapPin size={14} /> {record.profile.lastSeenLocation ?? 'Location not provided'}</p>
+        <div className="record-details-grid">
+          <span><strong>Last seen</strong>{record.profile.lastSeenDate ?? 'Date not provided'}</span>
+          <span><strong>Reported by</strong>{record.reporterName}</span>
+          <span><strong>Relationship</strong>{record.relationship}</span>
+        </div>
+      </div>
+    </article>
   )
 }
 

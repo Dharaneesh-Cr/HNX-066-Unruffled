@@ -5,65 +5,142 @@ import {
   type ReactNode,
 } from 'react'
 import { AuthContext } from './context'
-import type { DemoSession } from './authTypes'
+import type { AuthSession, Portal } from './authTypes'
+import {
+  ApiError,
+  AUTH_SESSION_EXPIRED_EVENT,
+  getCurrentUser,
+  loginWithPassword,
+} from '../services/api'
 
-const SESSION_STORAGE_KEY = 'sahayaa_session'
+const SESSION_STORAGE_KEY = 'sahayaa_access_session'
 
-function isDemoSession(value: unknown): value is DemoSession {
+function isPortal(value: unknown): value is Portal {
+  return value === 'searcher' || value === 'finder' || value === 'command_center'
+}
+
+function isStoredSession(value: unknown): value is AuthSession {
   if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Partial<DemoSession>
+  const candidate = value as Partial<AuthSession>
   return (
-    candidate.isAuthenticated === true &&
-    (candidate.portal === 'searcher' || candidate.portal === 'finder') &&
+    typeof candidate.accessToken === 'string' &&
+    isPortal(candidate.portal) &&
     typeof candidate.user === 'object' &&
     candidate.user !== null &&
-    typeof candidate.user.name === 'string' &&
-    typeof candidate.user.email === 'string' &&
-    typeof candidate.user.role === 'string'
+    typeof candidate.user.email === 'string'
   )
 }
 
-function readStoredSession(): DemoSession | null {
-  try {
-    const rawSession = window.localStorage.getItem(SESSION_STORAGE_KEY)
-    if (rawSession === null) return null
-    const parsedSession: unknown = JSON.parse(rawSession)
-    if (isDemoSession(parsedSession)) return parsedSession
+function clearStoredSession() {
+  window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
+}
 
-    console.warn('Stored Sahayaa session was invalid and has been cleared.')
-    window.localStorage.removeItem(SESSION_STORAGE_KEY)
-    return null
-  } catch (error) {
-    console.error('Unable to restore the Sahayaa demo session.', error)
+function readStoredSession(): AuthSession | null {
+  try {
+    const stored = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (stored === null) return null
+    const parsed: unknown = JSON.parse(stored)
+    return isStoredSession(parsed) ? parsed : null
+  } catch {
     return null
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<DemoSession | null>(readStoredSession)
+  const [session, setSession] = useState<AuthSession | null>(readStoredSession)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const login = useCallback((nextSession: DemoSession) => {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession))
+  useEffect(() => {
+    let cancelled = false
+    if (!session) {
+      clearStoredSession()
+      void Promise.resolve().then(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    } else {
+      void getCurrentUser(session.accessToken)
+        .then((user) => {
+          const portalRole = {
+            searcher: 'SEARCHER',
+            finder: 'FINDER',
+            command_center: 'COMMAND_CENTER',
+          }[session.portal]
+          if (user.role !== portalRole) {
+            window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT))
+            return
+          }
+          if (
+            session.user.id !== user.userId ||
+            session.user.name !== user.name ||
+            session.user.email !== user.email ||
+            session.user.organizationId !== user.organizationId ||
+            session.user.approvalStatus !== user.approvalStatus ||
+            session.user.organizationName !== user.organizationName ||
+            session.user.organizationType !== user.organizationType
+          ) {
+            setSession({
+              ...session,
+              user: {
+                ...session.user,
+                id: user.userId,
+                name: user.name,
+                email: user.email,
+                organizationId: user.organizationId,
+                approvalStatus: user.approvalStatus,
+                organizationName: user.organizationName,
+                organizationType: user.organizationType,
+              },
+            })
+          }
+        })
+        .catch((error: unknown) => {
+          if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+            window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT))
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false)
+        })
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [session])
+
+  useEffect(() => {
+    function expireSession() {
+      clearStoredSession()
+      setSession(null)
+    }
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession)
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession)
+  }, [])
+
+  const login = useCallback(async (
+    email: string,
+    password: string,
+    portal: Portal,
+    organization?: { name: string; type: string },
+  ) => {
+    const result = await loginWithPassword(email, password, portal, organization)
+    const nextSession: AuthSession = {
+      accessToken: result.accessToken,
+      expiresAt: result.expiresAt,
+      portal,
+      user: result.user,
+    }
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession))
     setSession(nextSession)
   }, [])
 
   const logout = useCallback(() => {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY)
+    clearStoredSession()
     setSession(null)
   }, [])
 
-  useEffect(() => {
-    function synchronizeSession(event: StorageEvent) {
-      if (event.key === SESSION_STORAGE_KEY || event.key === null) {
-        setSession(readStoredSession())
-      }
-    }
-    window.addEventListener('storage', synchronizeSession)
-    return () => window.removeEventListener('storage', synchronizeSession)
-  }, [])
-
   return (
-    <AuthContext.Provider value={{ session, login, logout }}>
+    <AuthContext.Provider value={{ session, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

@@ -7,7 +7,11 @@ import LogoutButton from './LogoutButton'
 export default function Header({ role }: { role?: PortalRole }) {
   const { session } = useAuth()
   const activeRole = session?.portal ?? role
-  const homePath = activeRole ? `/${activeRole}` : '/'
+  const homePath = activeRole === 'command_center'
+    ? '/command'
+    : activeRole
+      ? `/${activeRole}`
+      : '/'
 
   return (
     <header className={`app-header${session ? ' app-header-authenticated' : ''}`}>
@@ -21,7 +25,11 @@ export default function Header({ role }: { role?: PortalRole }) {
       </Link>
       <div className="header-right">
         <span className="header-context">
-          {activeRole ? `${activeRole === 'searcher' ? 'Searcher' : 'Finder'} Portal` : 'Community response network'}
+          {activeRole
+            ? activeRole === 'command_center'
+              ? 'Command Center'
+              : `${activeRole === 'searcher' ? 'Searcher' : 'Finder'} Portal`
+            : 'Community response network'}
         </span>
         {session && (
           <span className="header-user">

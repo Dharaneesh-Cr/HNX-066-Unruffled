@@ -4,7 +4,7 @@ import MobileNav from './MobileNav'
 import Sidebar from './Sidebar'
 import { useAuth } from '../../hooks/useAuth'
 
-export type PortalRole = 'searcher' | 'finder'
+export type PortalRole = 'searcher' | 'finder' | 'command_center'
 
 export default function PageContainer({
   children,

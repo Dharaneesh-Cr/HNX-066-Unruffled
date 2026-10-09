@@ -51,6 +51,7 @@ export interface PersonProfile {
   foundDate?: string
   foundTime?: string
   foundLocation?: string
+  photoPath?: string
 }
 
 export interface MissingPersonCase {
@@ -73,7 +74,7 @@ export interface AffectedPersonRecord {
   profile: PersonProfile
   organizationId: string
   organizationName: string
-  organizationType: Organization['type']
+  organizationType?: Organization['type']
   shelterOrFacility?: string
   currentLocation: string
   conditionStatus: string
@@ -85,6 +86,50 @@ export interface AffectedPersonRecord {
   candidateStatus: 'SEARCHING' | 'POTENTIAL_MATCH' | 'UNDER_VERIFICATION' | 'VERIFIED' | 'REJECTED'
   registeredAt: string
 }
+
+export interface RegistrationProfileInput {
+  fullName?: string
+  alias?: string
+  age?: number
+  gender?: string
+  photoPath?: string
+  distinguishingMarks?: string
+  clothingDescription?: string
+  additionalDescription?: string
+}
+
+export interface MissingCaseCreateInput {
+  profile: RegistrationProfileInput
+  reporterName: string
+  relationship: string
+  reporterEmail: string
+  reporterPhone: string
+  preferredContactMethod: string
+  consented: boolean
+  lastSeenDate: string
+  lastSeenTime?: string
+  lastSeenLocation: string
+  photoFile?: File
+}
+
+export interface AffectedPersonCreateInput {
+  profile: RegistrationProfileInput
+  facilityName?: string
+  foundDate: string
+  foundTime?: string
+  foundLocation: string
+  currentLocation: string
+  conditionStatus: string
+  foundBy: string
+  medicalConditionSummary?: string
+  medicationInformation?: string
+  immediateCareRequired?: string
+  accessibilityNeeds?: string
+  consented: boolean
+  photoFile?: File
+}
+
+export type RegistrationInput = MissingCaseCreateInput | AffectedPersonCreateInput
 
 export interface AffectedPerson {
   id: string
@@ -98,7 +143,7 @@ export interface AffectedPerson {
 export interface VerificationRecord {
   id: string
   label: string
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETE'
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETE' | 'REJECTED'
   updatedAt: string
 }
 

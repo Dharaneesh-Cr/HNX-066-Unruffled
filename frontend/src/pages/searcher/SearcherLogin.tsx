@@ -11,10 +11,12 @@ export default function SearcherLogin() {
   const { login } = useAuth()
   const [notice, setNotice] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
+    const formElement = event.currentTarget
+    const formData = new FormData(formElement)
     const email = String(formData.get('email') ?? '').trim()
     const password = String(formData.get('password') ?? '')
     const nextErrors: Record<string, string> = {}
@@ -29,16 +31,15 @@ export default function SearcherLogin() {
     setNotice('')
     if (Object.keys(nextErrors).length > 0) return
 
+    setSubmitting(true)
     try {
-      login({
-        isAuthenticated: true,
-        portal: 'searcher',
-        user: { name: 'Demo Searcher', email, role: 'FAMILY_MEMBER' },
-      })
+      await login(email, password, 'searcher')
+      formElement.reset()
       navigate('/searcher', { replace: true })
-    } catch (cause) {
-      console.error('Unable to save the Searcher demo session.', cause)
-      setNotice('Unable to save the demo session. Check browser storage settings and try again.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to sign in. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -82,19 +83,19 @@ export default function SearcherLogin() {
             type="password"
           />
           {errors.password && <span className="field-error" id="searcher-password-error" role="alert">{errors.password}</span>}
-          <button className="button button-primary login-submit" type="submit">Log In</button>
+          <button className="button button-primary login-submit" disabled={submitting} type="submit">
+            {submitting ? 'Signing in…' : 'Log In'}
+          </button>
         </form>
 
         <div className="login-secondary-actions">
-          <button onClick={() => setNotice('Family account creation is not enabled in this frontend demo.')} type="button">
-            Create Family Account
-          </button>
+          <Link to="/searcher/register">Create a Searcher account</Link>
           <button onClick={() => setNotice('Password recovery is not enabled in this frontend demo.')} type="button">
             Forgot Password?
           </button>
         </div>
         {notice && <p className="login-notice" role="alert">{notice}</p>}
-        <p className="login-demo-note">Frontend demo only · No credentials are saved or verified.</p>
+        <p className="login-demo-note">Sign in uses your local Sahayaa account. Your password is stored as a secure one-way hash.</p>
       </section>
     </LoginExperience>
   )
