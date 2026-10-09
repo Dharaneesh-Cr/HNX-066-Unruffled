@@ -1,9 +1,9 @@
 from __future__ import annotations
-
 import re
 import logging
 import sqlite3
 from typing import Any
+from ..core.config import DEMO_MODE, AUTO_APPROVE_FINDER_ORGS
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
@@ -141,7 +141,9 @@ def register_finder_organization(payload: FinderOrganizationRegistrationRequest)
     except sqlite3.IntegrityError as exc:
         raise HTTPException(status_code=409, detail="An account with this email already exists") from exc
     try:
-        approval_status = "APPROVED" if DEMO_MODE else "PENDING"
+        approval_status = (
+        "APPROVED" if AUTO_APPROVE_FINDER_ORGS else "PENDING"
+        )
         organization = create_finder_organization_application(
             user_id,
             organization_name=payload.organizationName,

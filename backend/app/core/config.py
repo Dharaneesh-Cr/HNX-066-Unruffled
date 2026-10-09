@@ -14,5 +14,10 @@ JWT_LIFETIME_SECONDS = 60 * 60
 PUBLIC_API_BASE_URL = "http://localhost:8000/api"
 DEMO_MODE = os.getenv("SAHAYAA_DEMO_MODE", "false").strip().lower() == "true"
 APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+AUTO_APPROVE_FINDER_ORGS = (
+    os.getenv("SAHAYAA_AUTO_APPROVE_FINDER_ORGS", "false").strip().lower() == "true"
+)
 if DEMO_MODE and APP_ENV in {"prod", "production"}:
     raise RuntimeError("SAHAYAA_DEMO_MODE cannot be enabled in production")
+
+
